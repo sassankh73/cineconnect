@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0d0d0d;
+  --gold: #c9a84c;
+  --crimson: #8b1a1a;
+  --panel: #1a1a2e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  color: #ffffff;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* RTL is the default (Persian). dir attr on <html> drives layout. */
+html[dir="rtl"] body {
+  font-family: var(--font-vazir), Vazirmatn, Tahoma, sans-serif;
+}
+html[dir="ltr"] body {
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+}
+
+/* ---- Film-grain texture overlay (signature ticker element) ---- */
+.film-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.18;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Film perforations (sprocket holes) for the strip ticker */
+.sprockets {
+  background-image: radial-gradient(circle, #0d0d0d 38%, transparent 40%);
+  background-size: 26px 100%;
+  background-repeat: repeat-x;
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0d0d0d;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a3e;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+}
+
+/* ---- Reusable component classes ---- */
+@layer components {
+  .container-cine {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold
+           transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/70
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-gold-sheen text-charcoal shadow-gold hover:brightness-110 active:scale-[0.98];
+  }
+  .btn-crimson {
+    @apply btn bg-crimson text-white hover:bg-crimson-light active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply btn border border-white/15 bg-white/5 text-white hover:border-gold/60 hover:text-gold;
+  }
+  .btn-sm {
+    @apply px-4 py-2 text-xs;
+  }
+
+  .card {
+    @apply rounded-2xl border border-white/8 bg-panel/70 shadow-card backdrop-blur;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-white/12 bg-charcoal-800 px-4 py-3 text-sm text-white
+           placeholder-white/35 transition-colors focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold/50;
+  }
+  .input-error {
+    @apply border-crimson-light focus:border-crimson-light focus:ring-crimson/40;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-white/80;
+  }
+  .field-error {
+    @apply mt-1 text-xs text-crimson-light;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .badge-gold {
+    @apply badge bg-gold/15 text-gold ring-1 ring-inset ring-gold/30;
+  }
+
+  .section-title {
+    @apply font-display text-3xl font-bold tracking-wide text-white sm:text-4xl;
+  }
+  .eyebrow {
+    @apply mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-gold;
+  }
+}
+
+/* Honor reduced-motion preference (accessibility / WCAG) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
