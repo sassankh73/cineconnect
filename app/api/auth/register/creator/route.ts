@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { mutate, uid } from "@/lib/db";
 import { hashPassword, setSession } from "@/lib/auth";
 import { isValidEmail, isStrongPassword } from "@/lib/validation";
-import { audit, clientIp } from "@/lib/security";
+import { audit, clientIp, userAgent } from "@/lib/security";
+import { baseUrl } from "@/lib/api";
+import { issueAndSendVerification } from "@/lib/verification";
 import type { CreatorProfile, User } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -25,7 +27,10 @@ export async function POST(req: Request) {
     const now = new Date().toISOString();
     const user: User = {
       id: userId, email: norm, password_hash: pwHash, role: "creator",
-      email_verified: false, created_at: now,
+      email_verified: false, provider: "credentials",
+      full_name_latin: full_name || "",
+      is_active: true, failed_login_attempts: 0,
+      created_at: now, updated_at: now,
     };
     db.users.push(user);
     const creator: CreatorProfile = {
@@ -38,7 +43,17 @@ export async function POST(req: Request) {
 
   if (!result) return NextResponse.json({ error: "email_taken" }, { status: 409 });
 
-  await setSession({ sub: result.user.id, role: "creator", name: result.creator.full_name, email: norm });
+  await issueAndSendVerification({
+    userId: result.user.id,
+    email: norm,
+    base: baseUrl(req),
+    countAsResend: false,
+  });
+
+  await setSession(
+    { sub: result.user.id, role: "creator", name: result.creator.full_name, email: norm },
+    { ip: clientIp(req), userAgent: userAgent(req) }
+  );
   await audit("register_creator", company || "", result.user.id, clientIp(req));
-  return NextResponse.json({ ok: true, creatorId: result.creator.id });
+  return NextResponse.json({ ok: true, creatorId: result.creator.id, email_verified: false });
 }

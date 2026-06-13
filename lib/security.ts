@@ -1,32 +1,9 @@
 import { mutate, uid, type DB } from "./db";
 import type { PlayerProfile, PublicPlayer } from "./types";
 
-// ---------------- In-memory rate limiter (login brute-force prevention) ----
-// Production: back this with Redis. Keyed by ip+route.
-const buckets = new Map<string, { count: number; resetAt: number }>();
-
-export function rateLimit(key: string, max: number, windowMs: number): { ok: boolean; retryAfter: number } {
-  const now = Date.now();
-  const b = buckets.get(key);
-  if (!b || b.resetAt < now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return { ok: true, retryAfter: 0 };
-  }
-  if (b.count >= max) {
-    return { ok: false, retryAfter: Math.ceil((b.resetAt - now) / 1000) };
-  }
-  b.count += 1;
-  return { ok: true, retryAfter: 0 };
-}
-
-export function clientIp(req: Request): string {
-  const h = req.headers;
-  return (
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    h.get("x-real-ip") ||
-    "0.0.0.0"
-  );
-}
+// Rate limiting lives in lib/rate-limit.ts; re-exported here so existing
+// imports (`from "@/lib/security"`) keep working.
+export { rateLimit, clientIp, userAgent, authRateLimit } from "./rate-limit";
 
 // ---------------- Audit log (all logins & profile changes) ----------------
 export async function audit(action: string, detail: string, userId?: string, ip?: string) {

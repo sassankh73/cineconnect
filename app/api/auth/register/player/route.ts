@@ -4,7 +4,9 @@ import {
   hashPassword, hashSecurityAnswer, encryptNationalId, setSession,
 } from "@/lib/auth";
 import { isValidEmail, isStrongPassword, isValidNationalId } from "@/lib/validation";
-import { audit, clientIp } from "@/lib/security";
+import { audit, clientIp, userAgent } from "@/lib/security";
+import { baseUrl } from "@/lib/api";
+import { issueAndSendVerification } from "@/lib/verification";
 import { TIERS } from "@/lib/constants";
 import type { PlayerProfile, User } from "@/lib/types";
 
@@ -53,7 +55,13 @@ export async function POST(req: Request) {
       security_question: account.security_question,
       security_answer_hash: "", // filled below
       email_verified: false,
+      provider: "credentials",
+      full_name_persian: String(profile.full_name_persian || ""),
+      full_name_latin: String(profile.full_name_latin || ""),
+      is_active: true,
+      failed_login_attempts: 0,
       created_at: now,
+      updated_at: now,
     };
     db.users.push(user);
 
@@ -113,7 +121,18 @@ export async function POST(req: Request) {
     }
   });
 
-  await setSession({ sub: created.user.id, role: "player", name: created.player.full_name_persian, email });
+  // Send the verification email (spec: immediately after registration).
+  await issueAndSendVerification({
+    userId: created.user.id,
+    email,
+    base: baseUrl(req),
+    countAsResend: false,
+  });
+
+  await setSession(
+    { sub: created.user.id, role: "player", name: created.player.full_name_persian, email },
+    { ip: clientIp(req), userAgent: userAgent(req) }
+  );
   await audit("register_player", `tier=${tier.tier}`, created.user.id, clientIp(req));
 
   return NextResponse.json({
@@ -122,5 +141,6 @@ export async function POST(req: Request) {
     tier: tier.tier,
     fee_toman: tier.fee_toman,
     status: created.player.status,
+    email_verified: false,
   });
 }

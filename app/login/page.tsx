@@ -6,6 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, useLang } from "../providers";
 import { dict } from "@/lib/i18n";
 import { Field, TextInput } from "@/components/fields";
+import { PasswordInput } from "@/components/auth/PasswordInput";
+import { AuthDivider } from "@/components/auth/AuthDivider";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 
 function LoginInner() {
   const { lang } = useLang();
@@ -13,14 +16,20 @@ function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
   const initialTab = params.get("tab") === "creator" ? "creator" : "player";
+  const oauthError = params.get("error"); // oauth_failed | oauth_unconfigured
 
   const [tab, setTab] = useState<"player" | "creator">(initialTab);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [remember, setRemember] = useState(false);
+  const [error, setError] = useState(
+    oauthError === "oauth_unconfigured"
+      ? dict.errors.oauthUnconfigured[lang]
+      : oauthError
+        ? dict.errors.oauthFailed[lang]
+        : ""
+  );
   const [busy, setBusy] = useState(false);
-  const [forgot, setForgot] = useState(false);
-  const [forgotSent, setForgotSent] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,11 +39,11 @@ function LoginInner() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role: tab }),
+        body: JSON.stringify({ email, password, remember_me: remember, role: tab }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(dict.errors[(data.error as keyof typeof dict.errors)] ? dict.errors[data.error as keyof typeof dict.errors][lang] : dict.errors.loginFailed[lang]);
+        setError(data?.message?.[lang] || dict.errors.loginFailed[lang]);
         return;
       }
       await refresh();
@@ -67,62 +76,47 @@ function LoginInner() {
           ))}
         </div>
 
-        {forgot ? (
-          forgotSent ? (
-            <div className="mt-8 rounded-lg border border-gold/30 bg-gold/5 p-5 text-center text-sm text-white/80">
-              {lang === "fa"
-                ? "اگر این ایمیل در سیستم ثبت شده باشد، لینک بازیابی رمز ارسال شد."
-                : "If this email exists, a password-reset link has been sent."}
-              <button onClick={() => { setForgot(false); setForgotSent(false); }} className="mt-4 block w-full text-gold">
-                {dict.auth.signIn[lang]} ←
-              </button>
-            </div>
-          ) : (
-            <form
-              onSubmit={(e) => { e.preventDefault(); setForgotSent(true); }}
-              className="mt-8 space-y-4"
-            >
-              <Field label={dict.common.email[lang]} required>
-                <TextInput type="email" value={email} onChange={setEmail} placeholder="you@example.com" required />
-              </Field>
-              <button type="submit" className="btn-primary w-full">
-                {lang === "fa" ? "ارسال لینک بازیابی" : "Send reset link"}
-              </button>
-              <button type="button" onClick={() => setForgot(false)} className="block w-full text-sm text-white/55 hover:text-white">
-                {dict.common.cancel[lang]}
-              </button>
-            </form>
-          )
-        ) : (
-          <form onSubmit={submit} className="mt-8 space-y-4">
-            <Field label={dict.common.email[lang]} required>
-              <TextInput type="email" value={email} onChange={setEmail} placeholder="you@example.com" autoComplete="email" required />
-            </Field>
-            <Field label={dict.common.password[lang]} required>
-              <TextInput type="password" value={password} onChange={setPassword} autoComplete="current-password" required />
-            </Field>
+        <form onSubmit={submit} className="mt-8 space-y-4">
+          <Field label={dict.common.email[lang]} required>
+            <TextInput type="email" value={email} onChange={setEmail} placeholder="you@example.com" autoComplete="email" required />
+          </Field>
+          <Field label={dict.common.password[lang]} required>
+            <PasswordInput value={password} onChange={setPassword} autoComplete="current-password" required />
+          </Field>
 
-            {error && (
-              <p className="rounded-md border border-crimson/40 bg-crimson/10 px-3 py-2 text-sm text-crimson-light">{error}</p>
-            )}
+          <div className="flex items-center justify-between text-sm">
+            <label className="flex cursor-pointer items-center gap-2 text-white/70">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="h-4 w-4 rounded border-white/20 bg-charcoal-800 accent-gold"
+              />
+              {dict.auth.rememberMe[lang]}
+            </label>
+            <Link href="/forgot-password" className="text-white/55 hover:text-gold">
+              {dict.auth.forgot[lang]}
+            </Link>
+          </div>
 
-            <button type="submit" disabled={busy} className="btn-primary w-full">
-              {busy ? dict.common.loading[lang] : dict.auth.signIn[lang]}
-            </button>
+          {error && (
+            <p className="rounded-md border border-crimson/40 bg-crimson/10 px-3 py-2 text-sm text-crimson-light">{error}</p>
+          )}
 
-            <div className="flex items-center justify-between pt-2 text-sm">
-              <button type="button" onClick={() => setForgot(true)} className="text-white/55 hover:text-gold">
-                {dict.auth.forgot[lang]}
-              </button>
-              <Link
-                href={tab === "creator" ? "/register/creator" : "/register/player"}
-                className="text-gold hover:text-gold-light"
-              >
-                {dict.auth.noAccount[lang]}
-              </Link>
-            </div>
-          </form>
-        )}
+          <button type="submit" disabled={busy} className="btn-primary w-full">
+            {busy ? dict.common.loading[lang] : dict.auth.signIn[lang]}
+          </button>
+
+          <Link
+            href={tab === "creator" ? "/register/creator" : "/register/player"}
+            className="block w-full text-center text-sm text-gold hover:text-gold-light"
+          >
+            {dict.auth.noAccount[lang]}
+          </Link>
+        </form>
+
+        <AuthDivider />
+        <OAuthButtons />
 
         <p className="mt-6 border-t border-white/8 pt-4 text-center text-xs text-white/40">
           {lang === "fa"

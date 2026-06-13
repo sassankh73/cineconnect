@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth, useLang } from "@/app/providers";
 import { TalentCard } from "@/components/TalentCard";
 import { CREATOR_PLANS } from "@/lib/constants";
+import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBanner";
 
 export default function CreatorDashboard() {
   const { lang } = useLang();
@@ -29,6 +30,7 @@ export default function CreatorDashboard() {
 
   return (
     <div className="container-cine py-10">
+      <EmailVerificationBanner />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-3xl font-bold text-white">{fa ? "داشبورد سازنده" : "Creator Dashboard"}</h1>
         <Link href="/talents" className="btn-primary btn-sm">{fa ? "جستجوی استعدادها" : "Search talent"}</Link>

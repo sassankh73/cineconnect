@@ -89,11 +89,55 @@ export interface CreatorProfile {
 export interface User {
   id: string;
   email: string;
-  password_hash: string;
+  password_hash: string;          // empty string for OAuth-only accounts (NULL in Postgres)
   role: Role;
   security_question?: string;
   security_answer_hash?: string;
   email_verified: boolean;
+  // ---- email verification ----
+  verification_token?: string;            // SHA-256 hash of the token (never the plain token)
+  verification_token_expiry?: string;     // ISO timestamp
+  verification_resend_count?: number;      // resends used in the current UTC day
+  verification_resend_day?: string;        // UTC date (YYYY-MM-DD) the counter applies to
+  verification_last_sent_at?: string;      // ISO — enforces the resend cooldown
+  // ---- password reset ----
+  reset_password_token?: string;          // SHA-256 hash of the token
+  reset_password_token_expiry?: string;    // ISO timestamp
+  // ---- oauth / identity ----
+  provider?: "google" | "apple" | "microsoft" | "credentials";
+  provider_id?: string;
+  full_name_persian?: string;
+  full_name_latin?: string;
+  avatar_url?: string;
+  // ---- account state & brute-force protection ----
+  is_active: boolean;
+  failed_login_attempts: number;
+  lockout_until?: string;                  // ISO — set after too many failed attempts
+  last_login_at?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+// One row per linked OAuth identity — lets a single user link multiple providers.
+export interface OAuthAccount {
+  id: string;
+  userId: string;
+  provider: "google" | "apple" | "microsoft";
+  provider_account_id: string;
+  access_token?: string;
+  refresh_token?: string;
+  expires_at?: string;
+  created_at: string;
+}
+
+// Server-side session registry — enables real invalidation on logout / password change.
+export interface Session {
+  id: string;          // the `sid` claim embedded in the JWT
+  userId: string;
+  token_hash: string;  // SHA-256 of the refresh token (never the raw token)
+  expires_at: string;
+  ip_address?: string;
+  user_agent?: string;
   created_at: string;
 }
 

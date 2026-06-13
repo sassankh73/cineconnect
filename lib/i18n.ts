@@ -65,6 +65,38 @@ export const dict = {
     forgot: { fa: "رمز عبور را فراموش کرده‌اید؟", en: "Forgot password?" },
     noAccount: { fa: "حساب ندارید؟ ثبت‌نام کنید", en: "No account? Register" },
     signIn: { fa: "ورود", en: "Sign in" },
+    rememberMe: { fa: "مرا به خاطر بسپار", en: "Remember me" },
+    orContinueWith: { fa: "یا ورود با", en: "or continue with" },
+    continueWith: { fa: "ادامه با", en: "Continue with" },
+    // forgot-password page
+    forgotTitle: { fa: "بازیابی رمز عبور", en: "Reset your password" },
+    forgotDesc: { fa: "ایمیل خود را وارد کنید تا لینک بازیابی برایتان ارسال شود.", en: "Enter your email and we'll send you a reset link." },
+    sendResetLink: { fa: "ارسال لینک بازیابی", en: "Send reset link" },
+    forgotSent: { fa: "اگر این ایمیل در سیستم ثبت شده باشد، لینک بازیابی رمز ارسال شد. صندوق ورودی (و پوشه اسپم) را بررسی کنید.", en: "If that email exists, a reset link has been sent. Check your inbox (and spam folder)." },
+    backToLogin: { fa: "بازگشت به ورود", en: "Back to login" },
+    // reset-password page
+    resetTitle: { fa: "انتخاب رمز عبور جدید", en: "Choose a new password" },
+    newPassword: { fa: "رمز عبور جدید", en: "New password" },
+    confirmPassword: { fa: "تکرار رمز عبور", en: "Confirm password" },
+    resetCta: { fa: "بازنشانی رمز عبور", en: "Reset password" },
+    resetSuccess: { fa: "رمز عبور شما با موفقیت تغییر کرد. در حال انتقال به صفحه ورود…", en: "Your password has been reset. Redirecting to login…" },
+    resetExpired: { fa: "این لینک نامعتبر یا منقضی شده است.", en: "This link is invalid or has expired." },
+    requestNewLink: { fa: "درخواست لینک جدید", en: "Request a new link" },
+    // verify-email page
+    verifying: { fa: "در حال تأیید ایمیل شما…", en: "Verifying your email…" },
+    verifySuccess: { fa: "ایمیل شما تأیید شد! در حال انتقال به داشبورد…", en: "Email verified! Redirecting to your dashboard…" },
+    verifyError: { fa: "لینک تأیید نامعتبر یا منقضی شده است.", en: "This verification link is invalid or has expired." },
+    resendVerification: { fa: "ارسال مجدد لینک تأیید", en: "Resend verification link" },
+    resendCooldown: { fa: "ارسال مجدد تا", en: "Resend available in" },
+    resent: { fa: "لینک تأیید جدید ارسال شد.", en: "A new verification link has been sent." },
+    // dashboard banner
+    bannerUnverified: { fa: "ایمیل شما هنوز تأیید نشده است. برخی امکانات تا زمان تأیید غیرفعال هستند.", en: "Your email isn't verified yet. Some features are disabled until you verify." },
+    bannerResend: { fa: "ارسال مجدد ایمیل تأیید", en: "Resend verification email" },
+    // change password (account settings)
+    changePasswordTitle: { fa: "تغییر رمز عبور", en: "Change password" },
+    currentPassword: { fa: "رمز عبور فعلی", en: "Current password" },
+    changePasswordCta: { fa: "تغییر رمز عبور", en: "Change password" },
+    changePasswordSuccess: { fa: "رمز عبور با موفقیت تغییر کرد.", en: "Password changed successfully." },
   },
 
   errors: {
@@ -78,6 +110,19 @@ export const dict = {
     loginFailed: { fa: "ایمیل یا رمز عبور اشتباه است", en: "Incorrect email or password" },
     rateLimited: { fa: "تلاش‌های زیاد. لطفاً بعداً دوباره امتحان کنید", en: "Too many attempts. Please try again later." },
     network: { fa: "خطای ارتباط با سرور", en: "Network error" },
+    accountLocked: { fa: "به دلیل تلاش‌های ناموفق زیاد، حساب شما موقتاً قفل شده است. لطفاً بعداً دوباره امتحان کنید.", en: "Your account is temporarily locked due to too many failed attempts. Try again later." },
+    accountInactive: { fa: "این حساب غیرفعال شده است.", en: "This account has been deactivated." },
+    emailTaken: { fa: "این ایمیل قبلاً ثبت شده است.", en: "This email is already registered." },
+    tokenInvalid: { fa: "این لینک نامعتبر یا منقضی شده است.", en: "This link is invalid or has expired." },
+    currentPasswordWrong: { fa: "رمز عبور فعلی اشتباه است.", en: "Your current password is incorrect." },
+    notAuthenticated: { fa: "برای این کار باید وارد شوید.", en: "You must be signed in to do this." },
+    verificationCooldown: { fa: "لطفاً پیش از ارسال مجدد کمی صبر کنید.", en: "Please wait a moment before requesting another email." },
+    verificationLimit: { fa: "به سقف ارسال روزانه رسیده‌اید. فردا دوباره تلاش کنید.", en: "You've reached the daily resend limit. Try again tomorrow." },
+    emailNotVerified: { fa: "برای این کار ابتدا باید ایمیل خود را تأیید کنید.", en: "Please verify your email address first." },
+    oauthUnconfigured: { fa: "این روش ورود هنوز پیکربندی نشده است.", en: "This sign-in method isn't configured yet." },
+    oauthFailed: { fa: "ورود با این سرویس ناموفق بود. دوباره تلاش کنید.", en: "Sign-in with this provider failed. Please try again." },
+    validation: { fa: "اطلاعات واردشده معتبر نیست.", en: "The submitted data is invalid." },
+    server: { fa: "خطای داخلی سرور. لطفاً بعداً تلاش کنید.", en: "Internal server error. Please try again later." },
   },
 
   footer: {

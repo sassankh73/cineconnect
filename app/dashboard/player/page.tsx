@@ -7,6 +7,7 @@ import { useAuth, useLang } from "@/app/providers";
 import { Field, TextInput, Select } from "@/components/fields";
 import { AVAILABILITY_OPTIONS, IRAN_PROVINCES, UPLOAD_LIMITS } from "@/lib/constants";
 import { uploadFile, humanLimit } from "@/lib/upload-client";
+import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBanner";
 
 const STATUS_LABEL: Record<string, { fa: string; cls: string }> = {
   pending_payment: { fa: "در انتظار پرداخت", cls: "text-amber-300" },
@@ -76,6 +77,7 @@ export default function PlayerDashboard() {
 
   return (
     <div className="container-cine py-10">
+      <EmailVerificationBanner />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-bold text-white">{p.full_name_persian}</h1>

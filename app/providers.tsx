@@ -25,6 +25,8 @@ export type SessionUser = {
   role: "player" | "creator" | "admin";
   fullName: string;
   email: string;
+  emailVerified: boolean;
+  provider?: "google" | "apple" | "microsoft" | "credentials";
 };
 
 type AuthCtx = {

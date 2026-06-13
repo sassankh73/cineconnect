@@ -3,9 +3,11 @@ node_modules/
 out/
 build/
 data/store.json
+data/outbox.json
 public/uploads/*
 !public/uploads/.gitkeep
 .env
 .env.local
 *.log
 .DS_Store
+tsconfig.tsbuildinfo

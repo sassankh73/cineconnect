@@ -33,20 +33,23 @@ async function main() {
   const db = {
     users: [], players: [], creators: [], payments: [], contactRequests: [],
     bookmarks: [], reviews: [], notifications: [], auditLogs: [], reports: [],
+    oauthAccounts: [], sessions: [],
   };
 
   // ---- admin ----
   const adminId = uid("usr_");
   db.users.push({
     id: adminId, email: "admin@cineconnect.ir", password_hash: await bcrypt.hash("Admin@1234", 12),
-    role: "admin", email_verified: true, created_at: now(),
+    role: "admin", email_verified: true, provider: "credentials",
+    is_active: true, failed_login_attempts: 0, created_at: now(), updated_at: now(),
   });
 
   // ---- creators ----
   const creatorUserId = uid("usr_");
   db.users.push({
     id: creatorUserId, email: "creator@cineconnect.ir", password_hash: await bcrypt.hash("Creator@1234", 12),
-    role: "creator", email_verified: true, created_at: now(),
+    role: "creator", email_verified: true, provider: "credentials", full_name_latin: "Hamid Director",
+    is_active: true, failed_login_attempts: 0, created_at: now(), updated_at: now(),
   });
   db.creators.push({
     id: uid("crt_"), userId: creatorUserId, full_name: "حمید کارگردان", company: "استودیو سینه‌پرو",
@@ -64,7 +67,9 @@ async function main() {
     db.users.push({
       id: userId, email: `talent${i + 1}@cineconnect.ir`, password_hash: await bcrypt.hash("Talent@1234", 12),
       role: "player", security_question: "نام اولین فیلم؟", security_answer_hash: await bcrypt.hash("سینما", 10),
-      email_verified: true, created_at: now(),
+      email_verified: true, provider: "credentials",
+      full_name_persian: name, full_name_latin: female ? "Actress " + (i + 1) : "Actor " + (i + 1),
+      is_active: true, failed_login_attempts: 0, created_at: now(), updated_at: now(),
     });
     db.players.push({
       id: uid("ply_"), userId,

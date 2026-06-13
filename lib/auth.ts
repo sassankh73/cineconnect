@@ -3,13 +3,21 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import type { Role } from "./types";
+import { mutate, readDB, uid } from "./db";
+import { hashToken } from "./auth-helpers";
+
+// Password hashing now lives in lib/password.ts (Argon2id-preferred, bcrypt
+// fallback). Re-exported so existing `from "@/lib/auth"` imports keep working.
+export { hashPassword, verifyPassword } from "./password";
 
 // ---- Secrets (env-driven; dev fallbacks so the app runs out of the box) ----
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "dev-only-cineconnect-jwt-secret-change-in-production-0123456789"
+  process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET ||
+    "dev-only-cineconnect-jwt-secret-change-in-production-0123456789"
 );
 const REFRESH_SECRET = new TextEncoder().encode(
-  process.env.REFRESH_SECRET || "dev-only-cineconnect-refresh-secret-change-me-9876543210abcd"
+  process.env.REFRESH_SECRET ||
+    "dev-only-cineconnect-refresh-secret-change-me-9876543210abcd"
 );
 // 32-byte key for AES-256-GCM National-ID encryption at rest.
 const NID_KEY = crypto
@@ -19,21 +27,30 @@ const NID_KEY = crypto
 
 const ACCESS_COOKIE = "cc_access";
 const REFRESH_COOKIE = "cc_refresh";
+const ACCESS_TTL_SECONDS = 20 * 60; // short-lived access token
 
-export interface TokenPayload {
+const SESSION_SECONDS = Number(process.env.SESSION_MAX_AGE_SECONDS) || 86400; // 24h
+const REMEMBER_SECONDS = Number(process.env.SESSION_REMEMBER_ME_SECONDS) || 2592000; // 30d
+
+// What callers provide to open a session.
+export interface SessionClaims {
   sub: string; // userId
   role: Role;
   name: string;
   email: string;
 }
+// What a decoded session token carries (claims + server-side session id).
+export interface TokenPayload extends SessionClaims {
+  sid: string;
+}
 
-// ---------------- Passwords & security answers (bcrypt) ----------------
-export async function hashPassword(pw: string) {
-  return bcrypt.hash(pw, 12);
+export interface SessionOptions {
+  remember?: boolean;
+  ip?: string;
+  userAgent?: string;
 }
-export async function verifyPassword(pw: string, hash: string) {
-  return bcrypt.compare(pw, hash);
-}
+
+// ---------------- Security answers (bcrypt) ----------------
 export async function hashSecurityAnswer(ans: string) {
   return bcrypt.hash(ans.trim().toLowerCase(), 10);
 }
@@ -58,21 +75,21 @@ export function decryptNationalId(blob: string): string {
 }
 
 // ---------------- JWT access + refresh tokens ----------------
-export async function signAccess(payload: TokenPayload) {
+async function signAccess(payload: TokenPayload) {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("20m") // short-lived access token
+    .setExpirationTime(`${ACCESS_TTL_SECONDS}s`)
     .sign(JWT_SECRET);
 }
-export async function signRefresh(payload: TokenPayload) {
-  return new SignJWT({ ...payload, jti: crypto.randomUUID() })
+async function signRefresh(payload: TokenPayload, ttlSeconds: number) {
+  return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime(`${ttlSeconds}s`)
     .sign(REFRESH_SECRET);
 }
-export async function verifyAccess(token: string): Promise<TokenPayload | null> {
+async function verifyAccess(token: string): Promise<TokenPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
     return payload as unknown as TokenPayload;
@@ -80,7 +97,7 @@ export async function verifyAccess(token: string): Promise<TokenPayload | null> 
     return null;
   }
 }
-export async function verifyRefresh(token: string): Promise<TokenPayload | null> {
+async function verifyRefresh(token: string): Promise<TokenPayload | null> {
   try {
     const { payload } = await jwtVerify(token, REFRESH_SECRET);
     return payload as unknown as TokenPayload;
@@ -90,6 +107,9 @@ export async function verifyRefresh(token: string): Promise<TokenPayload | null>
 }
 
 // ---------------- HttpOnly cookie session (NEVER localStorage) ----------------
+// SameSite=Lax (not Strict): Strict would drop the cookie on the return leg of
+// an OAuth redirect and on inbound email links. Lax still blocks CSRF on unsafe
+// cross-site requests, which is what matters here. (See AUTH_SETUP.md.)
 const cookieBase = {
   httpOnly: true as const,
   secure: process.env.NODE_ENV === "production",
@@ -97,35 +117,96 @@ const cookieBase = {
   path: "/",
 };
 
-export async function setSession(payload: TokenPayload) {
-  const [access, refresh] = await Promise.all([signAccess(payload), signRefresh(payload)]);
+// Open a session: register it server-side (so it can be invalidated), then set
+// the HttpOnly access + refresh cookies.
+export async function setSession(claims: SessionClaims, opts: SessionOptions = {}): Promise<string> {
+  const sid = crypto.randomUUID();
+  const payload: TokenPayload = { ...claims, sid };
+  const ttl = opts.remember ? REMEMBER_SECONDS : SESSION_SECONDS;
+
+  const [access, refresh] = await Promise.all([
+    signAccess(payload),
+    signRefresh(payload, ttl),
+  ]);
+
+  await mutate((db) => {
+    db.sessions.push({
+      id: sid,
+      userId: claims.sub,
+      token_hash: hashToken(refresh),
+      expires_at: new Date(Date.now() + ttl * 1000).toISOString(),
+      ip_address: opts.ip,
+      user_agent: opts.userAgent,
+      created_at: new Date().toISOString(),
+    });
+  });
+
   const jar = cookies();
-  jar.set(ACCESS_COOKIE, access, { ...cookieBase, maxAge: 20 * 60 });
-  jar.set(REFRESH_COOKIE, refresh, { ...cookieBase, maxAge: 7 * 24 * 3600 });
+  jar.set(ACCESS_COOKIE, access, { ...cookieBase, maxAge: Math.min(ACCESS_TTL_SECONDS, ttl) });
+  jar.set(REFRESH_COOKIE, refresh, { ...cookieBase, maxAge: ttl });
+  return sid;
 }
 
-export function clearSession() {
+// Clear cookies AND remove the server-side session row (true logout).
+export async function clearSession(sid?: string): Promise<void> {
   const jar = cookies();
+  const knownSid = sid ?? (await currentSid());
   jar.delete(ACCESS_COOKIE);
   jar.delete(REFRESH_COOKIE);
+  if (knownSid) {
+    await mutate((db) => {
+      db.sessions = db.sessions.filter((s) => s.id !== knownSid);
+    });
+  }
 }
 
-// Resolve the current session, transparently rotating the refresh token.
+async function currentSid(): Promise<string | undefined> {
+  const jar = cookies();
+  const access = jar.get(ACCESS_COOKIE)?.value;
+  if (access) {
+    const p = await verifyAccess(access);
+    if (p?.sid) return p.sid;
+  }
+  const refresh = jar.get(REFRESH_COOKIE)?.value;
+  if (refresh) {
+    const p = await verifyRefresh(refresh);
+    if (p?.sid) return p.sid;
+  }
+  return undefined;
+}
+
+async function sessionRowValid(sid: string): Promise<boolean> {
+  const db = await readDB();
+  const row = db.sessions.find((s) => s.id === sid);
+  if (!row) return false;
+  if (new Date(row.expires_at).getTime() < Date.now()) return false;
+  return true;
+}
+
+// Resolve the current session. Validates the token AND that its server-side row
+// still exists (so logout / password-change invalidation is honoured), and
+// transparently re-issues the short-lived access token from the refresh token.
 export async function getSession(): Promise<TokenPayload | null> {
   const jar = cookies();
   const access = jar.get(ACCESS_COOKIE)?.value;
   if (access) {
     const p = await verifyAccess(access);
-    if (p) return p;
+    if (p?.sid && (await sessionRowValid(p.sid))) return p;
   }
-  // access expired → try refresh rotation
+
   const refresh = jar.get(REFRESH_COOKIE)?.value;
   if (refresh) {
     const p = await verifyRefresh(refresh);
-    if (p) {
-      const payload: TokenPayload = { sub: p.sub, role: p.role, name: p.name, email: p.email };
-      await setSession(payload); // rotate
-      return payload;
+    if (p?.sid && (await sessionRowValid(p.sid))) {
+      // Bind the cookie to its row: the presented refresh token must match.
+      const db = await readDB();
+      const row = db.sessions.find((s) => s.id === p.sid);
+      if (row && row.token_hash === hashToken(refresh)) {
+        const payload: TokenPayload = { sub: p.sub, role: p.role, name: p.name, email: p.email, sid: p.sid };
+        const fresh = await signAccess(payload); // rotate the access token only
+        jar.set(ACCESS_COOKIE, fresh, { ...cookieBase, maxAge: ACCESS_TTL_SECONDS });
+        return payload;
+      }
     }
   }
   return null;
@@ -136,4 +217,27 @@ export async function requireRole(...roles: Role[]): Promise<TokenPayload | null
   if (!s) return null;
   if (roles.length && !roles.includes(s.role)) return null;
   return s;
+}
+
+// ---------------- Session invalidation ----------------
+// Spec: invalidate ALL sessions on password change / reset.
+export async function invalidateAllSessions(userId: string): Promise<void> {
+  await mutate((db) => {
+    db.sessions = db.sessions.filter((s) => s.userId !== userId);
+  });
+}
+
+// Spec: change-password invalidates all OTHER sessions (keeps the current one).
+export async function invalidateOtherSessions(userId: string, keepSid: string): Promise<void> {
+  await mutate((db) => {
+    db.sessions = db.sessions.filter((s) => s.userId !== userId || s.id === keepSid);
+  });
+}
+
+// Drop expired session rows (called opportunistically from auth routes).
+export async function pruneExpiredSessions(): Promise<void> {
+  const now = Date.now();
+  await mutate((db) => {
+    db.sessions = db.sessions.filter((s) => new Date(s.expires_at).getTime() >= now);
+  });
 }

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { mutate, uid } from "@/lib/db";
+import { mutate, uid, readDB } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { audit, clientIp } from "@/lib/security";
+import { fail } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -11,6 +12,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const s = await getSession();
   if (!s || s.role !== "creator") {
     return NextResponse.json({ error: "creator_only" }, { status: 403 });
+  }
+  // Unverified accounts cannot send contact requests (spec.email_verification
+  // .unverified_restrictions).
+  const me = (await readDB()).users.find((u) => u.id === s.sub);
+  if (me && me.email_verified === false) {
+    return fail("emailNotVerified", 403);
   }
   const body = await req.json().catch(() => ({}));
   const message = String(body?.message || "").slice(0, 1000);

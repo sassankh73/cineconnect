@@ -3,6 +3,7 @@ import path from "path";
 import type {
   User, PlayerProfile, CreatorProfile, Payment, ContactRequest,
   Bookmark, Review, Notification, AuditLog, Report,
+  OAuthAccount, Session,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -24,6 +25,8 @@ export interface DB {
   notifications: Notification[];
   auditLogs: AuditLog[];
   reports: Report[];
+  oauthAccounts: OAuthAccount[];
+  sessions: Session[];
 }
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -32,6 +35,7 @@ const DATA_FILE = path.join(DATA_DIR, "store.json");
 const empty: DB = {
   users: [], players: [], creators: [], payments: [], contactRequests: [],
   bookmarks: [], reviews: [], notifications: [], auditLogs: [], reports: [],
+  oauthAccounts: [], sessions: [],
 };
 
 // In-process cache + write serialization (avoids races within a single server).
