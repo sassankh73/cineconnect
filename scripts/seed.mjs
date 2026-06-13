@@ -93,8 +93,27 @@ async function main() {
     });
   }
 
-  await fs.writeFile(DATA_FILE, JSON.stringify(db, null, 2), "utf8");
-  console.log(`✓ Seeded ${db.players.length} players, ${db.creators.length} creator(s), 1 admin → ${DATA_FILE}`);
+  const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
+  if (DATABASE_URL) {
+    // Seed the Postgres JSONB store (matches lib/db.ts).
+    const { default: pg } = await import("pg");
+    const client = new pg.Client({
+      connectionString: DATABASE_URL,
+      ssl: DATABASE_URL.includes("localhost") ? false : { rejectUnauthorized: false },
+    });
+    await client.connect();
+    await client.query(`CREATE TABLE IF NOT EXISTS cc_store (id TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now());`);
+    await client.query(
+      `INSERT INTO cc_store (id, data, updated_at) VALUES ('main', $1, now())
+       ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
+      [JSON.stringify(db)]
+    );
+    await client.end();
+    console.log(`✓ Seeded ${db.players.length} players, ${db.creators.length} creator(s), 1 admin → Postgres (cc_store)`);
+  } else {
+    await fs.writeFile(DATA_FILE, JSON.stringify(db, null, 2), "utf8");
+    console.log(`✓ Seeded ${db.players.length} players, ${db.creators.length} creator(s), 1 admin → ${DATA_FILE}`);
+  }
   console.log("\nLogins:");
   console.log("  Admin   : admin@cineconnect.ir   / Admin@1234");
   console.log("  Creator : creator@cineconnect.ir / Creator@1234");

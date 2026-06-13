@@ -143,24 +143,34 @@ Unconfigured providers are safe: the start route redirects back to
 
 ---
 
-## 6. Database — JSON store now, Postgres later
+## 6. Database — two backends, chosen by env
 
-The app's default store is `data/store.json` (`lib/db.ts`), whose shape mirrors
-`db/schema.sql` 1:1. To move to Postgres:
+`lib/db.ts` selects its backend at runtime:
 
-```bash
-npm i pg
-export DATABASE_URL=postgres://user:pass@host:5432/cineconnect
-node scripts/migrate.mjs        # applies db/migrations/001..003 idempotently
-```
+- **`DATABASE_URL` unset** → local JSON file `data/store.json` (zero-config dev).
+- **`DATABASE_URL` set** → **Postgres**, storing the whole DB object as a single
+  JSONB row (table `cc_store`, id `main`). This works on serverless (Vercel,
+  read-only FS) and is what production uses. The table is **auto-created** on
+  first connect — no manual migration step required.
 
-Then swap the accessor functions in `lib/db.ts` for `pg` queries — every route
-handler stays unchanged. Migrations:
+### Provision Neon (recommended)
+1. Create a free project at https://neon.tech → copy the **pooled** connection
+   string (host contains `-pooler`), e.g.
+   `postgres://user:pass@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require`.
+2. Seed it (creates the table + demo data):
+   ```bash
+   DATABASE_URL="postgres://…-pooler…/neondb?sslmode=require" npm run seed
+   ```
+3. Set the same `DATABASE_URL` in Vercel (and locally to test).
 
-- `001_add_auth_columns.sql` — verification/reset tokens, provider, lockout,
-  is_active, names, timestamps (+ makes `password_hash` nullable for OAuth).
-- `002_add_oauth_accounts.sql` — linked-identity table.
-- `003_add_sessions.sql` — server-side session registry.
+`scripts/migrate.mjs` (runs `db/migrations/000_kv_store.sql`) is optional since
+the table auto-creates. The **relational** schema is preserved under
+`db/migrations/relational/` (001 auth columns, 002 oauth_accounts, 003 sessions)
+for a future full relational port.
+
+> Trade-off of the JSONB backend: each request reads/writes the whole document
+> (last-write-wins under heavy concurrent writes). Fine for launch; switch to the
+> relational schema for high write concurrency.
 
 ---
 
