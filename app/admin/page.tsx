@@ -281,7 +281,10 @@ export default function AdminPage() {
                       { label: "بازیگران فعال",     value: data.stats.activePlayers,         color: "#22c55e" },
                       { label: "در انتظار تأیید",   value: data.stats.pendingReviewPlayers,  color: "#3b82f6" },
                       { label: "سازندگان",          value: data.stats.creators,              color: "#a78bfa" },
+<<<<<<< HEAD
                       { label: "سازنده در انتظار",  value: data.stats.pendingCreators ?? 0,  color: "#f59e0b" },
+=======
+>>>>>>> a5c16ff1ac5df596fa852aecc90308462fbd669e
                       { label: "پرداخت معلق",       value: data.stats.pendingPayments,       color: "#f59e0b" },
                       { label: "گزارش‌های باز",     value: data.stats.openReports,           color: "#ef4444" },
                       { label: "تعلیقی",            value: data.stats.suspendedPlayers,      color: "#8B1A1A" },
@@ -433,11 +436,16 @@ export default function AdminPage() {
 
               {/* ── CREATORS ── */}
               {tab === "creators" && data && (
+<<<<<<< HEAD
                 <div className="space-y-5">
+=======
+                <div className="space-y-4">
+>>>>>>> a5c16ff1ac5df596fa852aecc90308462fbd669e
                   <div className="flex items-center gap-3">
                     <h2 className="text-lg font-bold" style={{ color: "#C9A84C" }}>مدیریت سازندگان</h2>
                     <span className="text-xs px-2 py-0.5 rounded-full"
                       style={{ background: "rgba(201,168,76,0.15)", color: "#C9A84C" }}>
+<<<<<<< HEAD
                       {data.creators.length} سازنده
                     </span>
                     {data.stats.pendingCreators > 0 && (
@@ -512,6 +520,12 @@ export default function AdminPage() {
                   )}
 
                   {/* ── Search + full table ── */}
+=======
+                      {filteredCreators.length} سازنده
+                    </span>
+                  </div>
+
+>>>>>>> a5c16ff1ac5df596fa852aecc90308462fbd669e
                   <div className="relative max-w-xs">
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
                       style={{ color: "rgba(255,255,255,0.3)" }} />
@@ -528,7 +542,11 @@ export default function AdminPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr style={{ background: "rgba(26,26,46,0.9)" }}>
+<<<<<<< HEAD
                           {["نام", "ایمیل", "پلن", "تأیید مدارک", "وضعیت", "عملیات"].map((h) => (
+=======
+                          {["نام", "ایمیل", "پلن", "تماس‌ها", "وضعیت", "تأیید ایمیل", "عملیات"].map((h) => (
+>>>>>>> a5c16ff1ac5df596fa852aecc90308462fbd669e
                             <th key={h} className="px-4 py-3 text-right text-xs font-medium"
                               style={{ color: "rgba(255,255,255,0.4)" }}>{h}</th>
                           ))}
@@ -560,6 +578,7 @@ export default function AdminPage() {
                                 {c.plan}
                               </span>
                             </td>
+<<<<<<< HEAD
                             <td className="px-4 py-3">
                               <span className="text-xs px-2 py-0.5 rounded-full" style={{
                                 background: c.approval_status === "approved"
@@ -577,11 +596,17 @@ export default function AdminPage() {
                                   : c.approval_status === "pending" ? "⏳ معلق"
                                   : "—"}
                               </span>
+=======
+                            <td className="px-4 py-3 text-xs text-center"
+                              style={{ color: "rgba(255,255,255,0.55)" }}>
+                              {c.contacts_used_this_month}
+>>>>>>> a5c16ff1ac5df596fa852aecc90308462fbd669e
                             </td>
                             <td className="px-4 py-3 text-xs"
                               style={{ color: c.is_active ? "#22c55e" : "#ef4444" }}>
                               {c.is_active ? "فعال" : "غیرفعال"}
                             </td>
+<<<<<<< HEAD
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-1 flex-wrap">
                                 {c.cinema_id_data && (
@@ -605,6 +630,15 @@ export default function AdminPage() {
                                     color="rgba(239,68,68,0.2)"
                                     onClick={() => { setRejectModal({ creatorId: c.id, name: c.full_name }); setRejectReason(""); }} />
                                 )}
+=======
+                            <td className="px-4 py-3 text-xs text-center"
+                              style={{ color: c.email_verified ? "#22c55e" : "#f59e0b" }}>
+                              {c.email_verified ? "✓" : "✗"}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {/* Change plan inline */}
+>>>>>>> a5c16ff1ac5df596fa852aecc90308462fbd669e
                                 <select
                                   defaultValue={c.plan}
                                   onChange={(e) => act("change_creator_plan", c.id, { plan: e.target.value })}
@@ -997,6 +1031,7 @@ export default function AdminPage() {
         )}
       </AnimatePresence>
 
+<<<<<<< HEAD
       {/* ── Cinema ID Viewer Modal ── */}
       <AnimatePresence>
         {cinemaIdModal && (
@@ -1073,6 +1108,8 @@ export default function AdminPage() {
         )}
       </AnimatePresence>
 
+=======
+>>>>>>> a5c16ff1ac5df596fa852aecc90308462fbd669e
       {/* ── Change Password Modal ── */}
       <AnimatePresence>
         {passwordModal && (

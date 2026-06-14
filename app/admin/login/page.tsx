@@ -41,6 +41,7 @@ export default function AdminLoginPage() {
         setError(data.error || "اطلاعات وارد شده نادرست است");
         return;
       }
+<<<<<<< HEAD
       // If no security question configured, skip step 2 entirely
       if (!data.security_question) {
         const verifyRes = await fetch("/api/admin/login/verify", {
@@ -57,6 +58,10 @@ export default function AdminLoginPage() {
         return;
       }
       setSecQuestion(data.security_question);
+=======
+      // Server returns the security question for this admin user
+      setSecQuestion(data.security_question || "");
+>>>>>>> a5c16ff1ac5df596fa852aecc90308462fbd669e
       setStep("security_question");
     } catch {
       setError("خطای شبکه. لطفاً دوباره تلاش کنید.");

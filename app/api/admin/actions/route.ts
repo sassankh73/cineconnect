@@ -171,6 +171,7 @@ export async function POST(req: Request) {
         return { ok: true };
       }
 
+<<<<<<< HEAD
       // ──────────────────────────── CREATOR APPROVAL ───────────────────────
       case "approve_creator": {
         const creator = db.creators.find((c) => c.id === id);
@@ -209,6 +210,8 @@ export async function POST(req: Request) {
         return { ok: true };
       }
 
+=======
+>>>>>>> a5c16ff1ac5df596fa852aecc90308462fbd669e
       // ─────────────────────────── NOTIFICATIONS ────────────────────────────
       case "notify": {
         const targets = userId ? db.users.filter((u) => u.id === userId) : db.users;
