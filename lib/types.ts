@@ -84,6 +84,15 @@ export interface CreatorProfile {
   plan: "free" | "basic" | "pro";
   contacts_used_this_month: number;
   created_at: string;
+  // ---- approval flow ----
+  approval_status?: "pending" | "approved" | "rejected";
+  approved_at?: string;
+  rejected_at?: string;
+  rejection_reason?: string;
+  // ---- cinema ID upload ----
+  cinema_id_data?: string;        // base64 data URL — never expose in API responses
+  cinema_id_filename?: string;
+  cinema_id_uploaded_at?: string;
 }
 
 export interface User {
