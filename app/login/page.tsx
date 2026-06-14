@@ -123,6 +123,17 @@ function LoginInner() {
             ? "ورود شما به‌منزله پذیرش قوانین و سیاست حریم خصوصی است."
             : "By signing in you accept our terms and privacy policy."}
         </p>
+
+        {/* Discreet admin entry-point — not visible without looking */}
+        <div className="mt-4 text-center">
+          <Link
+            href="/admin/login"
+            className="text-xs"
+            style={{ color: "rgba(255,255,255,0.1)" }}
+          >
+            {lang === "fa" ? "ورود مدیر" : "Admin"}
+          </Link>
+        </div>
       </div>
     </div>
   );

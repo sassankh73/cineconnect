@@ -17,7 +17,15 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 
   const s = await getSession();
-  const isCreator = s?.role === "creator" || s?.role === "admin";
+  let isCreator = s?.role === "admin"; // admins always have full access
+
+  if (s?.role === "creator") {
+    // Only approved creators get full access
+    const creator = db.creators.find((c) => c.userId === s.sub);
+    if (creator && (!creator.approval_status || creator.approval_status === "approved")) {
+      isCreator = true;
+    }
+  }
 
   if (!isCreator) {
     // public preview — minimal fields only

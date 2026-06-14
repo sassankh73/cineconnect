@@ -15,22 +15,118 @@ export default function CreatorDashboard() {
   const fa = lang === "fa";
 
   const [collections, setCollections] = useState<Record<string, any[]>>({});
+  const [approvalStatus, setApprovalStatus] = useState<"pending" | "approved" | "rejected" | null>(null);
+  const [approvalLoading, setApprovalLoading] = useState(true);
 
   useEffect(() => {
-    if (!loading && (!user || (user.role !== "creator" && user.role !== "admin"))) router.push("/login?tab=creator");
+    if (!loading && (!user || (user.role !== "creator" && user.role !== "admin"))) {
+      router.push("/login?tab=creator");
+    }
   }, [loading, user, router]);
 
   useEffect(() => {
-    fetch("/api/creator/bookmarks").then((r) => r.json()).then((d) => setCollections(d.collections || {})).catch(() => {});
+    // Fetch creator approval status
+    fetch("/api/creator/profile")
+      .then((r) => r.json())
+      .then((d) => setApprovalStatus(d.approval_status ?? "approved"))
+      .catch(() => setApprovalStatus("approved"))
+      .finally(() => setApprovalLoading(false));
   }, []);
 
-  if (loading) return <div className="container-cine py-24 text-center text-white/50">…</div>;
+  useEffect(() => {
+    if (approvalStatus === "approved") {
+      fetch("/api/creator/bookmarks")
+        .then((r) => r.json())
+        .then((d) => setCollections(d.collections || {}))
+        .catch(() => {});
+    }
+  }, [approvalStatus]);
 
+  if (loading || approvalLoading) return <div className="container-cine py-24 text-center text-white/50">…</div>;
+
+  // ── Pending approval state ─────────────────────────────────────────────────
+  if (approvalStatus === "pending") {
+    return (
+      <div className="container-cine py-14 max-w-2xl mx-auto">
+        <div
+          className="rounded-2xl p-8 text-center space-y-5"
+          style={{ background: "rgba(201,168,76,0.06)", border: "2px solid rgba(201,168,76,0.3)" }}
+        >
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto text-4xl"
+            style={{ background: "rgba(201,168,76,0.15)" }}>
+            🕐
+          </div>
+          <h1 className="font-display text-2xl font-bold text-white">
+            {fa ? "حساب شما در انتظار تأیید است" : "Your account is pending approval"}
+          </h1>
+          <p className="text-white/65 leading-8 text-sm">
+            {fa
+              ? "مدارک شما (کارت سینمایی) دریافت شد و توسط تیم سینه‌کانکت در حال بررسی است. معمولاً این فرآیند تا ۴۸ ساعت طول می‌کشد. پس از تأیید، ایمیل اطلاع‌رسانی دریافت خواهید کرد و می‌توانید به پروفایل بازیگران دسترسی داشته باشید."
+              : "Your Cinema Card has been received and is being reviewed by the CineConnect team. This process typically takes up to 48 hours. You'll receive an email once approved and will then have full access to talent profiles."}
+          </p>
+          <div className="grid grid-cols-3 gap-4 pt-2">
+            {[
+              { icon: "📤", fa: "مدارک ارسال شد", en: "Documents submitted" },
+              { icon: "🔍", fa: "در حال بررسی", en: "Under review" },
+              { icon: "🔒", fa: "دسترسی در انتظار", en: "Access pending" },
+            ].map((s, i) => (
+              <div key={i} className="rounded-xl p-4 text-center" style={{ background: "rgba(255,255,255,0.04)" }}>
+                <div className="text-2xl mb-2">{s.icon}</div>
+                <p className="text-xs text-white/55">{fa ? s.fa : s.en}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-white/40 pt-2">
+            {fa
+              ? "اگر پس از ۴۸ ساعت تأییدیه‌ای دریافت نکردید، با تیم پشتیبانی تماس بگیرید."
+              : "If you haven't received confirmation after 48 hours, please contact our support team."}
+          </p>
+          <a href="/contact" className="btn-ghost btn-sm inline-block">
+            {fa ? "تماس با پشتیبانی" : "Contact support"}
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Rejected state ─────────────────────────────────────────────────────────
+  if (approvalStatus === "rejected") {
+    return (
+      <div className="container-cine py-14 max-w-2xl mx-auto">
+        <div
+          className="rounded-2xl p-8 text-center space-y-5"
+          style={{ background: "rgba(139,26,26,0.1)", border: "2px solid rgba(239,68,68,0.3)" }}
+        >
+          <div className="text-5xl">❌</div>
+          <h1 className="font-display text-2xl font-bold text-white">
+            {fa ? "تأیید حساب رد شد" : "Account verification rejected"}
+          </h1>
+          <p className="text-white/65 leading-8 text-sm">
+            {fa
+              ? "متأسفانه مدارک ارسالی شما تأیید نشد. لطفاً با تیم پشتیبانی تماس بگیرید تا دلیل رد شدن را بدانید و در صورت نیاز، مدارک معتبرتری ارائه دهید."
+              : "Unfortunately your submitted documents were not approved. Please contact support to understand the reason and, if needed, submit more appropriate credentials."}
+          </p>
+          <a href="/contact" className="btn-primary btn-sm inline-block">
+            {fa ? "تماس با پشتیبانی" : "Contact support"}
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Approved: full dashboard ───────────────────────────────────────────────
   const collectionNames = Object.keys(collections);
 
   return (
     <div className="container-cine py-10">
       <EmailVerificationBanner />
+
+      {/* Approved badge */}
+      <div className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs"
+        style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", color: "#22c55e" }}>
+        ✅ {fa ? "حساب تأییدشده" : "Verified account"}
+      </div>
+
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-3xl font-bold text-white">{fa ? "داشبورد سازنده" : "Creator Dashboard"}</h1>
         <Link href="/talents" className="btn-primary btn-sm">{fa ? "جستجوی استعدادها" : "Search talent"}</Link>

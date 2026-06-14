@@ -99,6 +99,20 @@ export const dict = {
     changePasswordSuccess: { fa: "رمز عبور با موفقیت تغییر کرد.", en: "Password changed successfully." },
   },
 
+  adminLogin: {
+    title: { fa: "ورود مدیر سیستم", en: "Admin Login" },
+    subtitle: { fa: "Admin Access — CineConnect", en: "Admin Access — CineConnect" },
+    emailLabel: { fa: "ایمیل مدیر", en: "Admin Email" },
+    step1Btn: { fa: "ادامه", en: "Continue" },
+    secQuestion: { fa: "سؤال امنیتی", en: "Security Question" },
+    secAnswer: { fa: "پاسخ امنیتی", en: "Security Answer" },
+    secAnswerPlaceholder: { fa: "پاسخ خود را بنویسید…", en: "Write your answer…" },
+    step2Btn: { fa: "ورود به پنل مدیریت", en: "Enter Admin Panel" },
+    back: { fa: "بازگشت", en: "Back" },
+    checking: { fa: "در حال تأیید…", en: "Verifying…" },
+    restricted: { fa: "این صفحه فقط برای مدیران سیستم است. دسترسی غیرمجاز گزارش می‌شود.", en: "This page is for system administrators only. Unauthorized access is logged." },
+  },
+
   errors: {
     required: { fa: "این فیلد الزامی است", en: "This field is required" },
     emailInvalid: { fa: "ایمیل معتبر نیست", en: "Invalid email address" },

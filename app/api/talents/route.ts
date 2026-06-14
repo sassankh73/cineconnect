@@ -18,6 +18,15 @@ export async function GET(req: Request) {
   const get = (k: string) => q.get(k)?.trim() || "";
 
   const db = await readDB();
+
+  // Block creators who haven't been approved yet
+  if (s.role === "creator") {
+    const creator = db.creators.find((c) => c.userId === s.sub);
+    if (!creator || (creator.approval_status && creator.approval_status !== "approved")) {
+      return NextResponse.json({ error: "creator_pending_approval" }, { status: 403 });
+    }
+  }
+
   let list = db.players.filter((p) => p.status === "active");
 
   // ---- filters (filter_options spec) ----
