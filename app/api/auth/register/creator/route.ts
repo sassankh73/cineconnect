@@ -42,9 +42,9 @@ export async function POST(req: Request) {
       contacts_used_this_month: 0, created_at: now,
       // Approval fields
       approval_status: "pending",
-      cinema_id_data: cinema_id_data || null,
-      cinema_id_filename: cinema_id_filename || null,
-      cinema_id_uploaded_at: cinema_id_data ? now : null,
+      cinema_id_data: cinema_id_data || undefined,
+      cinema_id_filename: cinema_id_filename || undefined,
+      cinema_id_uploaded_at: cinema_id_data ? now : undefined,
     };
     db.creators.push(creator);
     return { user, creator };
